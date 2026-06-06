@@ -1,22 +1,44 @@
-const mongoose = require('mongoose');
+const { DataTypes, Model } = require('sequelize');
+const sequelize = require('../config/database');
 
-const approvalLogSchema = new mongoose.Schema({
+class ApprovalLog extends Model {}
+
+ApprovalLog.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
   entityType: {
-    type: String,
-    enum: ['rfq', 'purchase_order', 'invoice'],
-    required: true
+    type: DataTypes.ENUM('rfq', 'purchase_order', 'invoice'),
+    allowNull: false
   },
-  entityId: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'entityModel' },
-  entityModel: { type: String, enum: ['RFQ', 'PurchaseOrder', 'Invoice'] },
-  entityNumber: String, // rfqNumber, poNumber, etc.
+  entityId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  entityModel: {
+    type: DataTypes.ENUM('RFQ', 'PurchaseOrder', 'Invoice')
+  },
+  entityNumber: {
+    type: DataTypes.STRING
+  },
   action: {
-    type: String,
-    enum: ['submitted_for_approval', 'approved', 'rejected', 'resubmitted'],
-    required: true
+    type: DataTypes.ENUM('submitted_for_approval', 'approved', 'rejected', 'resubmitted'),
+    allowNull: false
   },
-  remarks: { type: String },
-  approverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  submittedById: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
-}, { timestamps: true });
+  remarks: {
+    type: DataTypes.TEXT
+  },
+  approverId: {
+    type: DataTypes.INTEGER
+  },
+  submittedById: {
+    type: DataTypes.INTEGER
+  }
+}, {
+  sequelize,
+  modelName: 'ApprovalLog'
+});
 
-module.exports = mongoose.model('ApprovalLog', approvalLogSchema);
+module.exports = ApprovalLog;

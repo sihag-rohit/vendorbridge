@@ -28,7 +28,7 @@ export default function NotificationsPage() {
   const navigate = useNavigate();
 
   const handleClick = async (notif) => {
-    if (!notif.isRead) await markRead(notif._id);
+    if (!notif.isRead) await markRead(notif.id);
     if (notif.entityType === 'rfq') navigate(`/rfqs/${notif.entityId}`);
     else if (notif.entityType === 'purchase_order') navigate(`/purchase-orders/${notif.entityId}`);
     else if (notif.entityType === 'invoice') navigate(`/invoices/${notif.entityId}`);
@@ -54,7 +54,7 @@ export default function NotificationsPage() {
       ) : (
         <div className="card p-0 divide-y divide-gray-50">
           {notifications.map(notif => (
-            <button key={notif._id} onClick={() => handleClick(notif)}
+            <button key={notif.id} onClick={() => handleClick(notif)}
               className={`w-full text-left px-5 py-4 hover:bg-gray-50/80 transition-colors flex gap-4 ${!notif.isRead ? 'bg-primary-50/30' : ''}`}>
               <div className="text-2xl flex-shrink-0 mt-0.5">{typeIcons[notif.type] || '🔔'}</div>
               <div className="flex-1 min-w-0">

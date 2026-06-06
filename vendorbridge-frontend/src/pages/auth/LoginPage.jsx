@@ -75,8 +75,8 @@ export default function LoginPage() {
           className="w-full max-w-md card glass-morphism shadow-2xl p-8"
         >
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-600 text-white mb-4 shadow-lg animate-pulse-glow">
-              <Lock size={32} />
+            <div className="mx-auto w-24 h-24 rounded-full border-2 border-gray-200 flex items-center justify-center bg-gray-50 mb-4 overflow-hidden">
+              <span className="text-gray-400 font-medium">Photo</span>
             </div>
             <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
             <p className="text-gray-600 mt-2">Sign in to VendorBridge ERP</p>
@@ -90,7 +90,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="label">Email Address</label>
+              <label className="label">Username</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input type="email" required className="input !pl-10 bg-white/80" 
@@ -128,35 +128,6 @@ export default function LoginPage() {
               Create Vendor Account
             </Link>
           </div>
-        </motion.div>
-        
-        {/* Demo Credentials Footer */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-          className="mt-8 text-slate-800 text-sm bg-white/60 p-6 rounded-2xl shadow-xl backdrop-blur-md border border-white/40 w-full max-w-md relative overflow-hidden"
-        >
-          <div className="absolute top-0 left-0 w-1 bg-primary-500 h-full"></div>
-          <div className="flex items-center gap-2 mb-3">
-            <ShieldCheck className="w-5 h-5 text-primary-600" />
-            <p className="font-bold text-gray-900 text-base">Hackathon Demo Credentials</p>
-          </div>
-          <div className="space-y-2 font-mono text-xs">
-            <div className="flex justify-between items-center bg-white/50 p-2 rounded-lg border border-white/50">
-              <span className="font-semibold text-gray-600">Admin/Officer:</span>
-              <span className="text-primary-700 bg-primary-50 px-2 py-0.5 rounded select-all cursor-pointer">admin@vendorbridge.com</span>
-            </div>
-            <div className="flex justify-between items-center bg-white/50 p-2 rounded-lg border border-white/50">
-              <span className="font-semibold text-gray-600">Vendor:</span>
-              <span className="text-primary-700 bg-primary-50 px-2 py-0.5 rounded select-all cursor-pointer">vendor1@vendorbridge.com</span>
-            </div>
-            <div className="flex justify-between items-center bg-white/50 p-2 rounded-lg border border-white/50">
-              <span className="font-semibold text-gray-600">Password:</span>
-              <span className="text-gray-800 bg-gray-100 px-2 py-0.5 rounded select-all cursor-pointer">password123</span>
-            </div>
-          </div>
-          <p className="mt-4 text-xs text-center text-gray-500 font-medium bg-white/40 py-2 rounded-lg">
-            Tip: You can select and copy the text above.
-          </p>
         </motion.div>
       </div>
     </div>

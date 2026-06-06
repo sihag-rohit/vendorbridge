@@ -6,7 +6,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import { PriorityBadge } from '../../components/ui/StatusBadge';
 import { PageLoader } from '../../components/ui/LoadingSpinner';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Calendar, Building2, GitCompareArrows, Package, User, Clock, FileText } from 'lucide-react';
+import { ArrowLeft, Calendar, Building2, GitCompareArrows, Package, User, Clock, FileText, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function RFQDetailPage() {
@@ -17,18 +17,42 @@ export default function RFQDetailPage() {
   const [quotations, setQuotations] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this RFQ? This action cannot be undone.')) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/rfqs/${id}`);
+      toast.success('RFQ deleted successfully');
+      navigate('/rfqs');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete RFQ');
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [rfqRes, quotRes, logRes] = await Promise.all([
+        const isVendor = user?.role === 'vendor';
+
+        const requests = [
           api.get(`/rfqs/${id}`),
           api.get('/quotations', { params: { rfqId: id } }),
-          api.get(`/activity-logs/entity/${id}`)
-        ]);
-        setRfq(rfqRes.data);
-        setQuotations(quotRes.data);
-        setActivityLogs(logRes.data);
+        ];
+
+        // Only admins/officers/managers can access activity logs
+        if (!isVendor) {
+          requests.push(api.get(`/activity-logs/entity/${id}`));
+        }
+
+        const results = await Promise.all(requests);
+        setRfq(results[0].data);
+        setQuotations(results[1].data);
+        if (!isVendor && results[2]) {
+          setActivityLogs(results[2].data);
+        }
       } catch (err) {
         toast.error('Failed to load RFQ details.');
         navigate('/rfqs');
@@ -37,13 +61,13 @@ export default function RFQDetailPage() {
       }
     };
     fetchAll();
-  }, [id]);
+  }, [id, user?.role]);
 
   if (loading) return <PageLoader />;
   if (!rfq) return null;
 
   const canCompare = ['under_comparison', 'pending_approval', 'approved', 'rejected'].includes(rfq.status);
-  const canSubmitQuote = user?.role === 'vendor' && rfq.status === 'sent';
+  const canSubmitQuote = user?.role === 'vendor' && ['sent', 'under_review', 'under_comparison', 'published'].includes(rfq.status);
 
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl">
@@ -66,6 +90,15 @@ export default function RFQDetailPage() {
           <Link to={`/rfqs/${id}/compare`} className="btn-primary">
             <GitCompareArrows className="w-4 h-4" /> Compare Quotes
           </Link>
+        )}
+        {(user?.role === 'admin' || user?.role === 'officer') && (
+          <button 
+            onClick={handleDelete} 
+            disabled={deleting}
+            className="btn-ghost text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
+            <Trash2 className="w-4 h-4" /> {deleting ? 'Deleting...' : 'Delete'}
+          </button>
         )}
         {canSubmitQuote && (
           <Link to={`/quotations/submit/${id}`} className="btn-primary">
@@ -155,31 +188,90 @@ export default function RFQDetailPage() {
               )}
             </div>
           )}
+
+          {/* Vendor: Show their submitted quotation */}
+          {user?.role === 'vendor' && quotations.length > 0 && (() => {
+            const myQuote = quotations[0]; // vendor only sees their own quote
+            return (
+              <div className="card border-l-4 border-l-primary-500 bg-primary-50/30">
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary-600" /> Your Submitted Quotation
+                  <span className={`badge ml-auto ${
+                    myQuote.status === 'submitted' ? 'badge-blue' :
+                    myQuote.status === 'under_review' ? 'badge-yellow' :
+                    myQuote.status === 'accepted' ? 'badge-green' :
+                    myQuote.status === 'rejected' ? 'badge-red' : 'badge-blue'
+                  }`}>{myQuote.status?.replace('_', ' ')}</span>
+                </h3>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-white rounded-lg p-3 shadow-sm">
+                    <p className="text-xs text-gray-400 uppercase font-medium">Total Amount</p>
+                    <p className="text-xl font-bold text-primary-700">₹{Number(myQuote.totalAmount).toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 shadow-sm">
+                    <p className="text-xs text-gray-400 uppercase font-medium">Delivery Timeline</p>
+                    <p className="text-xl font-bold text-gray-800">{myQuote.deliveryTimeline || '—'}</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 shadow-sm">
+                    <p className="text-xs text-gray-400 uppercase font-medium">Subtotal</p>
+                    <p className="font-semibold text-gray-700">₹{Number(myQuote.subtotal).toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 shadow-sm">
+                    <p className="text-xs text-gray-400 uppercase font-medium">Tax ({myQuote.taxRate}%)</p>
+                    <p className="font-semibold text-gray-700">₹{Number(myQuote.taxAmount).toLocaleString()}</p>
+                  </div>
+                </div>
+                {myQuote.notes && (
+                  <div className="bg-white rounded-lg p-3 shadow-sm">
+                    <p className="text-xs text-gray-400 uppercase font-medium mb-1">Notes / Terms</p>
+                    <p className="text-sm text-gray-700">{myQuote.notes}</p>
+                  </div>
+                )}
+                {myQuote.status === 'submitted' && rfq.status !== 'pending_approval' && rfq.status !== 'approved' && (
+                  <p className="text-xs text-gray-500 mt-3 text-center">⏳ Waiting for admin to review all quotations</p>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Vendor: No quotation yet */}
+          {user?.role === 'vendor' && quotations.length === 0 && ['sent', 'under_review', 'under_comparison', 'published'].includes(rfq.status) && (
+            <div className="card border border-dashed border-gray-300 text-center py-8">
+              <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-gray-500 font-medium">You haven't submitted a quotation yet</p>
+              <p className="text-xs text-gray-400 mt-1">Deadline: {format(new Date(rfq.deadline), 'MMM d, yyyy')}</p>
+            </div>
+          )}
         </div>
 
         {/* Sidebar: Vendors + Timeline */}
         <div className="space-y-6">
-          {/* Assigned Vendors */}
-          <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-3">Assigned Vendors</h3>
-            <div className="space-y-2">
-              {rfq.assignedVendors?.map(v => {
-                const hasQuote = quotations.find(q => q.vendorId?._id === v._id);
-                return (
-                  <div key={v._id} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
-                    <div className="w-7 h-7 bg-primary-100 rounded-full flex items-center justify-center text-primary-700 text-xs font-semibold">
-                      {v.name?.charAt(0)}
+          {/* Admin: Assigned Vendors with quote status */}
+          {user?.role !== 'vendor' && (
+            <div className="card">
+              <h3 className="font-semibold text-gray-900 mb-3">Assigned Vendors</h3>
+              <div className="space-y-2">
+                {rfq.assignedVendors?.map(v => {
+                  const hasQuote = quotations.find(q => q.vendor?.id === v.id || q.vendorId === v.id);
+                  return (
+                    <div key={v.id} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+                      <div className="w-7 h-7 bg-primary-100 rounded-full flex items-center justify-center text-primary-700 text-xs font-semibold">
+                        {v.name?.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{v.name}</p>
+                        <p className="text-xs text-gray-400">{v.category}</p>
+                      </div>
+                      {hasQuote
+                        ? <span className="badge badge-green text-xs">Quoted ✓</span>
+                        : <span className="badge badge-yellow text-xs">Pending</span>
+                      }
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">{v.name}</p>
-                      <p className="text-xs text-gray-400">{v.category}</p>
-                    </div>
-                    {hasQuote && <span className="badge-green badge text-xs">Quoted</span>}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Activity Timeline */}
           {activityLogs.length > 0 && (
@@ -189,7 +281,7 @@ export default function RFQDetailPage() {
               </h3>
               <div className="space-y-4">
                 {activityLogs.slice(0, 8).map(log => (
-                  <div key={log._id} className="timeline-item">
+                  <div key={log.id} className="timeline-item">
                     <div className="timeline-dot bg-primary-100 text-primary-600">
                       <Clock className="w-3.5 h-3.5" />
                     </div>

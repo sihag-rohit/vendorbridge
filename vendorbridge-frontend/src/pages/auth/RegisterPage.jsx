@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Mail, Lock, User, Phone, ArrowRight, Building2, Store } from 'lucide-react';
+import { Mail, Lock, User, Phone, ArrowRight, Building2, Store, Camera } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', role: 'vendor', phone: '',
-    vendorCategory: '', gstNumber: ''
+    firstName: '', lastName: '', email: '', password: '', role: 'officer', phone: '',
+    country: '', additionalInfo: '', address: '', gstNumber: ''
   });
+  const [photo, setPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
@@ -19,7 +21,10 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(''); setLoading(true);
     try {
-      await register(formData);
+      await register({
+        ...formData,
+        name: `${formData.firstName} ${formData.lastName}`
+      });
       toast.success('Registration successful!');
       navigate('/');
     } catch (err) {
@@ -50,9 +55,38 @@ export default function RegisterPage() {
           transition={{ duration: 0.4 }}
           className="w-full max-w-2xl card glass-morphism shadow-2xl p-6 sm:p-10"
         >
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Join VendorBridge</h2>
-            <p className="text-gray-600 mt-2">Create your account to start receiving RFQs</p>
+          <div className="text-center mb-6">
+            <div className="relative mx-auto w-24 h-24 mb-4">
+              <input 
+                type="file" 
+                id="photo-upload" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setPhoto(file);
+                    setPhotoPreview(URL.createObjectURL(file));
+                  }
+                }} 
+              />
+              <label 
+                htmlFor="photo-upload" 
+                className="w-24 h-24 rounded-full border-2 border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden cursor-pointer hover:border-primary-400 hover:bg-gray-100 transition-colors group relative"
+              >
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-gray-400 font-medium group-hover:text-primary-500">Photo</span>
+                )}
+                
+                {/* Overlay on hover */}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="w-6 h-6 text-white" />
+                </div>
+              </label>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900">Registration</h2>
           </div>
 
           {error && (
@@ -64,55 +98,62 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="label">Company / Full Name *</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                  <input required className="input !pl-10 bg-white/80" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                </div>
+                <label className="label">First Name</label>
+                <input required className="input bg-white/80" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
               </div>
               
               <div>
-                <label className="label">Email Address *</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                  <input type="email" required className="input !pl-10 bg-white/80" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-                </div>
+                <label className="label">Last Name</label>
+                <input required className="input bg-white/80" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} />
+              </div>
+              
+              <div>
+                <label className="label">Email Address</label>
+                <input type="email" required className="input bg-white/80" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
               </div>
 
               <div>
-                <label className="label">Phone Number *</label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                  <input required className="input !pl-10 bg-white/80" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                </div>
+                <label className="label">Phone Number</label>
+                <input required className="input bg-white/80" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
               </div>
 
               <div>
-                <label className="label">Password *</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                  <input type="password" required className="input !pl-10 bg-white/80" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-                </div>
-              </div>
-
-              <div>
-                <label className="label">Vendor Category *</label>
-                <select required className="input bg-white/80" value={formData.vendorCategory} onChange={e => setFormData({...formData, vendorCategory: e.target.value})}>
-                  <option value="">Select category...</option>
-                  <option value="IT & Software">IT & Software</option>
-                  <option value="Hardware & Electronics">Hardware & Electronics</option>
-                  <option value="Office Supplies">Office Supplies</option>
-                  <option value="Logistics & Transport">Logistics & Transport</option>
-                  <option value="Consulting Services">Consulting Services</option>
-                  <option value="Maintenance">Maintenance</option>
-                  <option value="Other">Other</option>
+                <label className="label">Role</label>
+                <select required className="input bg-white/80" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
+                  <option value="officer">Procurement Officer</option>
+                  <option value="vendor">Vendor</option>
+                  <option value="manager">Manager / Approver</option>
+                  <option value="admin">Admin</option>
                 </select>
               </div>
 
               <div>
-                <label className="label">GST / Tax ID</label>
-                <input className="input bg-white/80" placeholder="Optional" value={formData.gstNumber} onChange={e => setFormData({...formData, gstNumber: e.target.value})} />
+                <label className="label">Country</label>
+                <input required className="input bg-white/80" value={formData.country} onChange={e => setFormData({...formData, country: e.target.value})} />
               </div>
+
+              <div>
+                <label className="label">Password</label>
+                <input type="password" required className="input bg-white/80" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+              </div>
+              
+              {formData.role === 'vendor' && (
+                <>
+                  <div>
+                    <label className="label">Address (Vendor Only) *</label>
+                    <input required className="input bg-white/80" placeholder="Street Address" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="label">GSTIN Number (Vendor Only) *</label>
+                    <input required className="input bg-white/80" placeholder="e.g. 29ABCDE1234F2Z5" value={formData.gstNumber} onChange={e => setFormData({...formData, gstNumber: e.target.value})} />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div>
+              <label className="label">Additional Information ....</label>
+              <textarea rows={4} className="input bg-white/80 resize-none" value={formData.additionalInfo} onChange={e => setFormData({...formData, additionalInfo: e.target.value})}></textarea>
             </div>
 
             <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 mt-8 text-lg font-bold">

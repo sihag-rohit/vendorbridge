@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const PurchaseOrder = require('../models/PurchaseOrder');
+const { PurchaseOrder, PoItem, Vendor, RFQ, User, Quotation, Invoice } = require('../models');
 const auth = require('../middleware/auth');
 const { logActivity } = require('../utils/helpers');
 
@@ -8,21 +8,24 @@ const { logActivity } = require('../utils/helpers');
 router.get('/', auth, async (req, res) => {
   try {
     const { status } = req.query;
-    let query = {};
-    if (status) query.status = status;
+    let where = {};
+    if (status) where.status = status;
 
     if (req.user.role === 'vendor') {
-      const Vendor = require('../models/Vendor');
-      const vendor = await Vendor.findById(req.user.vendorId);
-      if (vendor) query.vendorId = vendor._id;
+      const vendor = await Vendor.findByPk(req.user.vendorId);
+      if (vendor) where.vendorId = vendor.id;
       else return res.json([]);
     }
 
-    const pos = await PurchaseOrder.find(query)
-      .populate('vendorId', 'name email category')
-      .populate('rfqId', 'title rfqNumber')
-      .populate('createdBy', 'name')
-      .sort({ createdAt: -1 });
+    const pos = await PurchaseOrder.findAll({
+      where,
+      include: [
+        { model: Vendor, as: 'vendor', attributes: ['id', 'name', 'email', 'category'] },
+        { model: RFQ, as: 'rfq', attributes: ['id', 'title', 'rfqNumber'] },
+        { model: User, as: 'createdBy', attributes: ['id', 'name'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
     res.json(pos);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -32,12 +35,17 @@ router.get('/', auth, async (req, res) => {
 // GET /api/purchase-orders/:id
 router.get('/:id', auth, async (req, res) => {
   try {
-    const po = await PurchaseOrder.findById(req.params.id)
-      .populate('vendorId', 'name email category gstNumber phone address')
-      .populate('rfqId', 'title rfqNumber deadline')
-      .populate('quotationId')
-      .populate('createdBy', 'name email')
-      .populate('approvedBy', 'name email');
+    const po = await PurchaseOrder.findByPk(req.params.id, {
+      include: [
+        { model: Vendor, as: 'vendor', attributes: ['id', 'name', 'email', 'category', 'gstNumber', 'phone', 'addressStreet', 'addressCity'] },
+        { model: RFQ, as: 'rfq', attributes: ['id', 'title', 'rfqNumber', 'deadline'] },
+        { model: Quotation, as: 'quotation' },
+        { model: Invoice, as: 'invoice', attributes: ['id', 'invoiceNumber', 'status'] },
+        { model: User, as: 'createdBy', attributes: ['id', 'name', 'email'] },
+        { model: User, as: 'approvedBy', attributes: ['id', 'name', 'email'] },
+        { model: PoItem, as: 'items' }
+      ]
+    });
     if (!po) return res.status(404).json({ message: 'Purchase Order not found.' });
     res.json(po);
   } catch (error) {
@@ -49,16 +57,21 @@ router.get('/:id', auth, async (req, res) => {
 router.put('/:id/status', auth, async (req, res) => {
   try {
     const { status } = req.body;
-    const po = await PurchaseOrder.findByIdAndUpdate(req.params.id, { status }, { new: true })
-      .populate('vendorId', 'name')
-      .populate('rfqId', 'rfqNumber title');
+    const po = await PurchaseOrder.findByPk(req.params.id, {
+      include: [
+        { model: Vendor, as: 'vendor', attributes: ['id', 'name'] },
+        { model: RFQ, as: 'rfq', attributes: ['id', 'rfqNumber', 'title'] }
+      ]
+    });
 
     if (!po) return res.status(404).json({ message: 'PO not found.' });
 
+    await po.update({ status });
+
     await logActivity({
-      entityType: 'purchase_order', entityId: po._id, entityNumber: po.poNumber,
+      entityType: 'purchase_order', entityId: po.id, entityNumber: po.poNumber,
       action: 'po_status_updated', description: `PO ${po.poNumber} status updated to ${status}`,
-      userId: req.user._id, userName: req.user.name, userRole: req.user.role
+      userId: req.user.id, userName: req.user.name, userRole: req.user.role
     });
 
     res.json(po);

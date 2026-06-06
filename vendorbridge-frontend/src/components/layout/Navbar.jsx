@@ -39,7 +39,7 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
   }, []);
 
   const handleNotifClick = async (notif) => {
-    if (!notif.isRead) await markRead(notif._id);
+    if (!notif.isRead) await markRead(notif.id);
     setShowNotifs(false);
     if (notif.entityType === 'rfq') navigate(`/rfqs/${notif.entityId}`);
     else if (notif.entityType === 'purchase_order') navigate(`/purchase-orders/${notif.entityId}`);
@@ -49,7 +49,7 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
   const recentNotifs = notifications.slice(0, 8);
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-10">
+    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-50">
       {/* Left: Hamburger + Title */}
       <div className="flex items-center gap-3">
         <button
@@ -108,7 +108,7 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
                 ) : (
                   recentNotifs.map(notif => (
                     <button
-                      key={notif._id}
+                      key={notif.id}
                       onClick={() => handleNotifClick(notif)}
                       className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${!notif.isRead ? 'bg-primary-50/50' : ''}`}
                     >

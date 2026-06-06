@@ -6,8 +6,12 @@ import { PageLoader } from '../../components/ui/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Package, Building2, FileText, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
+import { useAuth } from '../../context/AuthContext';
 
 export default function PODetailPage() {
+  const { user } = useAuth();
+  const isVendor = user?.role === 'vendor';
+  const isOfficer = user?.role === 'officer';
   const { id } = useParams();
   const navigate = useNavigate();
   const [po, setPO] = useState(null);
@@ -26,12 +30,12 @@ export default function PODetailPage() {
     try {
       const res = await api.post('/invoices', { poId: id, taxRate: po.taxRate });
       toast.success('Invoice generated!');
-      navigate(`/invoices/${res.data._id}`);
+      navigate(`/invoices/${res.data.id}`);
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to generate invoice.';
       if (err.response?.data?.invoice) {
         toast.error('Invoice already exists for this PO.');
-        navigate(`/invoices/${err.response.data.invoice._id}`);
+        navigate(`/invoices/${err.response.data.invoice.id}`);
       } else {
         toast.error(msg);
       }
@@ -67,10 +71,17 @@ export default function PODetailPage() {
           <h1 className="text-2xl font-bold text-gray-900">Purchase Order</h1>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleGenerateInvoice} disabled={generating} className="btn-primary">
-            <Receipt className="w-4 h-4" />
-            {generating ? 'Generating...' : 'Generate Invoice'}
-          </button>
+          {po.invoice ? (
+            <button onClick={() => navigate(`/invoices/${po.invoice.id}`)} className="btn-secondary text-primary-700 bg-primary-50 border-primary-200 hover:bg-primary-100">
+              <Receipt className="w-4 h-4" />
+              View Invoice ({po.invoice.invoiceNumber})
+            </button>
+          ) : isOfficer && (
+            <button onClick={handleGenerateInvoice} disabled={generating} className="btn-primary">
+              <Receipt className="w-4 h-4" />
+              {generating ? 'Generating...' : 'Generate Invoice'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -79,19 +90,19 @@ export default function PODetailPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center gap-1">
-              <Building2 className="w-3.5 h-3.5" /> Vendor
+              <Building2 className="w-3.5 h-3.5" /> {isVendor ? 'My Company' : 'Vendor'}
             </p>
-            <p className="font-semibold text-gray-900">{po.vendorId?.name}</p>
-            <p className="text-sm text-gray-500">{po.vendorId?.email}</p>
-            <p className="text-sm text-gray-500">{po.vendorId?.phone}</p>
-            {po.vendorId?.gstNumber && <p className="text-xs text-gray-400 mt-1">GST: {po.vendorId.gstNumber}</p>}
+            <p className="font-semibold text-gray-900">{po.vendor?.name || '—'}</p>
+            {po.vendor?.email && <p className="text-sm text-gray-500">{po.vendor.email}</p>}
+            {po.vendor?.phone && <p className="text-sm text-gray-500">{po.vendor.phone}</p>}
+            {po.vendor?.gstNumber && <p className="text-xs text-gray-400 mt-1">GST: {po.vendor.gstNumber}</p>}
           </div>
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center gap-1">
               <FileText className="w-3.5 h-3.5" /> PO Details
             </p>
             <p className="font-semibold text-gray-900">{po.poNumber}</p>
-            <p className="text-sm text-gray-500">RFQ: {po.rfqId?.rfqNumber}</p>
+            <p className="text-sm text-gray-500">RFQ: {po.rfq?.rfqNumber || '—'}</p>
             <p className="text-sm text-gray-500">Created: {format(new Date(po.createdAt), 'MMM d, yyyy')}</p>
           </div>
           <div>
@@ -99,17 +110,31 @@ export default function PODetailPage() {
             <p className="font-semibold text-gray-900">
               {po.deliveryDate ? format(new Date(po.deliveryDate), 'MMM d, yyyy') : 'TBD'}
             </p>
-            <div className="mt-2">
-              <p className="text-xs text-gray-400 mb-1">Update Status</p>
-              <select className="input text-sm" value={po.status}
-                onChange={e => handleStatusUpdate(e.target.value)}>
-                <option value="generated">Generated</option>
-                <option value="sent">Sent</option>
-                <option value="acknowledged">Acknowledged</option>
-                <option value="in_progress">In Progress</option>
-                <option value="delivered">Delivered</option>
-              </select>
-            </div>
+            {isVendor ? (
+              <div className="mt-2">
+                <p className="text-xs text-gray-400 mb-1">Update Status</p>
+                <select className="input text-sm" value={po.status}
+                  onChange={e => handleStatusUpdate(e.target.value)}>
+                  <option value="generated" disabled>Generated</option>
+                  <option value="sent" disabled>Sent</option>
+                  <option value="acknowledged">Acknowledge Receipt</option>
+                  <option value="in_progress">Mark In Progress</option>
+                  <option value="delivered">Mark Delivered</option>
+                </select>
+              </div>
+            ) : (
+              <div className="mt-2">
+                <p className="text-xs text-gray-400 mb-1">Update Status</p>
+                <select className="input text-sm" value={po.status}
+                  onChange={e => handleStatusUpdate(e.target.value)}>
+                  <option value="generated">Generated</option>
+                  <option value="sent">Sent</option>
+                  <option value="acknowledged">Acknowledged</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="delivered">Delivered</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
       </div>

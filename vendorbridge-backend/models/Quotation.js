@@ -1,43 +1,103 @@
-const mongoose = require('mongoose');
+const { DataTypes, Model } = require('sequelize');
+const sequelize = require('../config/database');
 
-const quotationItemSchema = new mongoose.Schema({
-  productName: { type: String, required: true },
-  quantity: { type: Number, required: true },
-  unit: String,
-  unitPrice: { type: Number, required: true },
-  totalPrice: { type: Number, required: true }
-});
+class Quotation extends Model {}
+class QuotationItem extends Model {}
 
-const quotationSchema = new mongoose.Schema({
-  rfqId: { type: mongoose.Schema.Types.ObjectId, ref: 'RFQ', required: true },
-  vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
-  items: [quotationItemSchema],
-  subtotal: { type: Number, required: true },
-  taxRate: { type: Number, default: 18 },
-  taxAmount: { type: Number, default: 0 },
-  totalAmount: { type: Number, required: true },
-  deliveryTimeline: { type: Number, required: true }, // days
-  deliveryDate: Date,
-  notes: String,
-  termsConditions: String,
-  validUntil: Date,
-  status: {
-    type: String,
-    enum: ['pending', 'submitted', 'under_review', 'accepted', 'rejected'],
-    default: 'pending'
+Quotation.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
   },
-  submittedAt: Date,
-  submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
-}, { timestamps: true });
-
-// Calculate totals before save
-quotationSchema.pre('save', function (next) {
-  if (this.items && this.items.length > 0) {
-    this.subtotal = this.items.reduce((sum, item) => sum + item.totalPrice, 0);
-    this.taxAmount = (this.subtotal * this.taxRate) / 100;
-    this.totalAmount = this.subtotal + this.taxAmount;
+  rfqId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  vendorId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  subtotal: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0
+  },
+  taxRate: {
+    type: DataTypes.FLOAT,
+    defaultValue: 18
+  },
+  taxAmount: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0
+  },
+  totalAmount: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0
+  },
+  deliveryTimeline: {
+    type: DataTypes.INTEGER, // days
+    allowNull: false
+  },
+  deliveryDate: {
+    type: DataTypes.DATE
+  },
+  notes: {
+    type: DataTypes.TEXT
+  },
+  termsConditions: {
+    type: DataTypes.TEXT
+  },
+  validUntil: {
+    type: DataTypes.DATE
+  },
+  status: {
+    type: DataTypes.ENUM('pending', 'submitted', 'under_review', 'accepted', 'rejected'),
+    defaultValue: 'pending'
+  },
+  submittedAt: {
+    type: DataTypes.DATE
+  },
+  submittedById: {
+    type: DataTypes.INTEGER
   }
-  next();
+}, {
+  sequelize,
+  modelName: 'Quotation'
 });
 
-module.exports = mongoose.model('Quotation', quotationSchema);
+QuotationItem.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  quotationId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  productName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  quantity: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  unit: {
+    type: DataTypes.STRING
+  },
+  unitPrice: {
+    type: DataTypes.FLOAT,
+    allowNull: false
+  },
+  totalPrice: {
+    type: DataTypes.FLOAT,
+    allowNull: false
+  }
+}, {
+  sequelize,
+  modelName: 'QuotationItem',
+  timestamps: false
+});
+
+module.exports = { Quotation, QuotationItem };

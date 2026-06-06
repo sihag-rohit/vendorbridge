@@ -36,7 +36,7 @@ export function NotificationProvider({ children }) {
     });
 
     socketInstance.on('connect', () => {
-      socketInstance.emit('join', user._id);
+      socketInstance.emit('join', user.id);
     });
 
     socketInstance.on('notification', (newNotification) => {
@@ -55,7 +55,7 @@ export function NotificationProvider({ children }) {
   const markRead = async (id) => {
     try {
       await api.put(`/notifications/${id}/read`);
-      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
       console.error(err);

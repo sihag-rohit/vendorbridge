@@ -1,45 +1,100 @@
-const mongoose = require('mongoose');
+const { DataTypes, Model } = require('sequelize');
+const sequelize = require('../config/database');
 
-const vendorSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
+class Vendor extends Model {
+  // Virtual getter for on-time delivery rate
+  get onTimeDeliveryRate() {
+    if (this.totalOrders === 0) return 0;
+    return Math.round((this.onTimeDeliveries / this.totalOrders) * 100);
+  }
+
+  // Virtual getter for quote win rate
+  get quoteWinRate() {
+    if (this.totalQuotes === 0) return 0;
+    return Math.round((this.quoteWins / this.totalQuotes) * 100);
+  }
+
+  toJSON() {
+    const values = Object.assign({}, this.get());
+    values.onTimeDeliveryRate = this.onTimeDeliveryRate;
+    values.quoteWinRate = this.quoteWinRate;
+    return values;
+  }
+}
+
+Vendor.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
   category: {
-    type: String,
-    required: true,
-    enum: ['IT & Software', 'Office Supplies', 'Raw Materials', 'Logistics', 'Consulting', 'Manufacturing', 'Construction', 'Healthcare', 'Food & Beverage', 'Other']
+    type: DataTypes.ENUM('IT & Software', 'Office Supplies', 'Raw Materials', 'Logistics', 'Consulting', 'Manufacturing', 'Construction', 'Healthcare', 'Food & Beverage', 'Other'),
+    allowNull: false
   },
-  gstNumber: { type: String, trim: true, uppercase: true },
-  contactPerson: { type: String, required: true, trim: true },
-  email: { type: String, required: true, lowercase: true, trim: true },
-  phone: { type: String, required: true },
-  address: {
-    street: String,
-    city: String,
-    state: String,
-    pincode: String,
-    country: { type: String, default: 'India' }
+  gstNumber: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
-  status: { type: String, enum: ['active', 'inactive'], default: 'active' },
-  rating: { type: Number, min: 0, max: 5, default: 0 },
-  totalOrders: { type: Number, default: 0 },
-  onTimeDeliveries: { type: Number, default: 0 },
-  quoteWins: { type: Number, default: 0 },
-  totalQuotes: { type: Number, default: 0 },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  notes: { type: String }
-}, { timestamps: true });
-
-// Virtual for on-time delivery rate
-vendorSchema.virtual('onTimeDeliveryRate').get(function () {
-  if (this.totalOrders === 0) return 0;
-  return Math.round((this.onTimeDeliveries / this.totalOrders) * 100);
+  contactPerson: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: { isEmail: true }
+  },
+  phone: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  // Flattening address for SQL
+  addressStreet: { type: DataTypes.STRING },
+  addressCity: { type: DataTypes.STRING },
+  addressState: { type: DataTypes.STRING },
+  addressPincode: { type: DataTypes.STRING },
+  addressCountry: { type: DataTypes.STRING, defaultValue: 'India' },
+  
+  status: {
+    type: DataTypes.ENUM('active', 'inactive'),
+    defaultValue: 'active'
+  },
+  rating: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0
+  },
+  totalOrders: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  onTimeDeliveries: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  quoteWins: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  totalQuotes: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  createdById: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  }
+}, {
+  sequelize,
+  modelName: 'Vendor'
 });
 
-// Virtual for quote win rate
-vendorSchema.virtual('quoteWinRate').get(function () {
-  if (this.totalQuotes === 0) return 0;
-  return Math.round((this.quoteWins / this.totalQuotes) * 100);
-});
-
-vendorSchema.set('toJSON', { virtuals: true });
-
-module.exports = mongoose.model('Vendor', vendorSchema);
+module.exports = Vendor;

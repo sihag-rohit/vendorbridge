@@ -1,5 +1,4 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const http = require('http');
@@ -42,8 +41,13 @@ app.use('/api/activity-logs', require('./routes/activityLogs'));
 app.use('/api/reports', require('./routes/reports'));
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'VendorBridge API is running', db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
+app.get('/api/health', async (req, res) => {
+  try {
+    await require('./config/database').authenticate();
+    res.json({ status: 'ok', message: 'VendorBridge API is running', db: 'connected' });
+  } catch (error) {
+    res.json({ status: 'error', message: 'VendorBridge API is running', db: 'disconnected' });
+  }
 });
 
 // Socket.io connection handling
@@ -61,38 +65,26 @@ io.on('connection', (socket) => {
   });
 });
 
-// MongoDB Connection — try primary URI, fallback to alt
-const connectDB = async () => {
-  const uris = [
-    process.env.MONGODB_URI,
-    process.env.MONGODB_URI_ALT
-  ].filter(Boolean);
-
-  for (const uri of uris) {
-    try {
-      const masked = uri.replace(/:([^@]+)@/, ':****@');
-      console.log(`Trying: ${masked}`);
-      await mongoose.connect(uri, {
-        serverSelectionTimeoutMS: 8000,
-        connectTimeoutMS: 8000
-      });
-      console.log('✅ MongoDB connected successfully!');
-      return true;
-    } catch (err) {
-      console.error(`❌ Failed: ${err.message}`);
-    }
-  }
-  console.error('❌ All MongoDB connection attempts failed.');
-  console.log('⚠️  Server will run without database. Please check your MongoDB Atlas credentials and IP whitelist.');
-  return false;
-};
+// Database Connection
+const { sequelize } = require('./models');
 
 const startServer = async () => {
-  await connectDB();
-  const PORT = process.env.PORT || 5000;
-  server.listen(PORT, () => {
-    console.log(`🚀 VendorBridge server running on port ${PORT}`);
-  });
+  try {
+    await sequelize.authenticate();
+    console.log('✅ SQLite connected successfully!');
+    
+    // Auto-sync the schema (use force: false for safety in prod)
+    await sequelize.sync({ alter: true });
+    console.log('✅ Database synchronized successfully!');
+
+    const PORT = process.env.PORT || 5000;
+    server.listen(PORT, () => {
+      console.log(`🚀 VendorBridge server running on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error(`❌ Failed:`, err);
+    process.exit(1);
+  }
 };
 
 startServer();

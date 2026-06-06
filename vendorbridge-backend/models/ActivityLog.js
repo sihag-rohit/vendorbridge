@@ -1,25 +1,55 @@
-const mongoose = require('mongoose');
+const { DataTypes, Model } = require('sequelize');
+const sequelize = require('../config/database');
 
-const activityLogSchema = new mongoose.Schema({
-  entityType: {
-    type: String,
-    enum: ['rfq', 'vendor', 'quotation', 'purchase_order', 'invoice', 'user', 'approval'],
-    required: true
+class ActivityLog extends Model {}
+
+ActivityLog.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
   },
-  entityId: { type: mongoose.Schema.Types.ObjectId },
-  entityNumber: String,
-  action: { type: String, required: true },
-  description: { type: String, required: true },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  userName: String,
-  userRole: String,
-  metadata: { type: mongoose.Schema.Types.Mixed },
-  ipAddress: String
-}, { timestamps: true });
+  entityType: {
+    type: DataTypes.ENUM('rfq', 'vendor', 'quotation', 'purchase_order', 'invoice', 'user', 'approval'),
+    allowNull: false
+  },
+  entityId: {
+    type: DataTypes.INTEGER
+  },
+  entityNumber: {
+    type: DataTypes.STRING
+  },
+  action: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: false
+  },
+  userId: {
+    type: DataTypes.INTEGER
+  },
+  userName: {
+    type: DataTypes.STRING
+  },
+  userRole: {
+    type: DataTypes.STRING
+  },
+  metadata: {
+    type: DataTypes.JSON // For arbitrary mixed data
+  },
+  ipAddress: {
+    type: DataTypes.STRING
+  }
+}, {
+  sequelize,
+  modelName: 'ActivityLog',
+  indexes: [
+    { fields: ['entityType', 'entityId'] },
+    { fields: ['userId'] },
+    { fields: ['createdAt'] }
+  ]
+});
 
-// Index for faster queries
-activityLogSchema.index({ entityType: 1, entityId: 1 });
-activityLogSchema.index({ userId: 1 });
-activityLogSchema.index({ createdAt: -1 });
-
-module.exports = mongoose.model('ActivityLog', activityLogSchema);
+module.exports = ActivityLog;

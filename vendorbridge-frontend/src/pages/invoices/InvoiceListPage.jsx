@@ -61,18 +61,18 @@ export default function InvoiceListPage() {
               </thead>
               <tbody>
                 {invoices.map(inv => (
-                  <tr key={inv._id}>
+                  <tr key={inv.id}>
                     <td><span className="font-mono font-medium text-primary-700">{inv.invoiceNumber}</span></td>
-                    <td><span className="text-sm text-gray-600">{inv.poId?.poNumber}</span></td>
+                    <td><span className="text-sm text-gray-600">{inv.po?.poNumber || '—'}</span></td>
                     <td>
-                      <p className="font-medium text-sm">{inv.vendorId?.name}</p>
-                      <p className="text-xs text-gray-400">{inv.vendorId?.category}</p>
+                      <p className="font-medium text-sm">{inv.vendor?.name || '—'}</p>
+                      <p className="text-xs text-gray-400">{inv.vendor?.category || ''}</p>
                     </td>
                     <td><span className="font-semibold">₹{inv.totalAmount?.toLocaleString()}</span></td>
                     <td><span className="text-sm">{format(new Date(inv.createdAt), 'MMM d, yyyy')}</span></td>
                     <td><StatusBadge status={inv.status} /></td>
                     <td>
-                      <Link to={`/invoices/${inv._id}`}
+                      <Link to={`/invoices/${inv.id}`}
                         className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 inline-flex">
                         <Eye className="w-4 h-4" />
                       </Link>

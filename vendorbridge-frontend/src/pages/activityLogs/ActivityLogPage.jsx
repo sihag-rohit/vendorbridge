@@ -71,7 +71,7 @@ export default function ActivityLogPage() {
       ) : (
         <div className="card divide-y divide-gray-50 p-0">
           {logs.map(log => (
-            <div key={log._id} className="flex gap-4 px-5 py-4 hover:bg-gray-50/50 transition-colors">
+            <div key={log.id} className="flex gap-4 px-5 py-4 hover:bg-gray-50/50 transition-colors">
               <div className="text-lg flex-shrink-0 w-8 text-center mt-0.5">
                 {entityTypeIcons[log.entityType] || '📌'}
               </div>

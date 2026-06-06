@@ -1,40 +1,78 @@
-const mongoose = require('mongoose');
+const { DataTypes, Model } = require('sequelize');
+const sequelize = require('../config/database');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
-  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-  password: { type: String, required: true, minlength: 6 },
-  role: {
-    type: String,
-    enum: ['admin', 'officer', 'vendor', 'manager'],
-    default: 'officer'
-  },
-  vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', default: null },
-  isActive: { type: Boolean, default: true },
-  resetPasswordToken: String,
-  resetPasswordExpires: Date
-}, { timestamps: true });
+class User extends Model {
+  // Instance method for password comparison
+  async comparePassword(candidatePassword) {
+    return bcrypt.compare(candidatePassword, this.password);
+  }
 
-// Hash password before save
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+  // Override toJSON to exclude password and tokens
+  toJSON() {
+    const values = Object.assign({}, this.get());
+    delete values.password;
+    delete values.resetPasswordToken;
+    delete values.resetPasswordExpires;
+    return values;
+  }
+}
+
+User.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+    validate: {
+      isEmail: true
+    }
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      len: [6, 100]
+    }
+  },
+  role: {
+    type: DataTypes.ENUM('admin', 'officer', 'vendor', 'manager'),
+    defaultValue: 'officer'
+  },
+  vendorId: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  resetPasswordToken: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  resetPasswordExpires: {
+    type: DataTypes.DATE,
+    allowNull: true
+  }
+}, {
+  sequelize,
+  modelName: 'User',
+  hooks: {
+    beforeSave: async (user) => {
+      if (user.changed('password')) {
+        user.password = await bcrypt.hash(user.password, 12);
+      }
+    }
+  }
 });
 
-// Compare password method
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
-// Remove password from JSON output
-userSchema.methods.toJSON = function () {
-  const obj = this.toObject();
-  delete obj.password;
-  delete obj.resetPasswordToken;
-  delete obj.resetPasswordExpires;
-  return obj;
-};
-
-module.exports = mongoose.model('User', userSchema);
+module.exports = User;

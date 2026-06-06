@@ -18,7 +18,7 @@ function ApprovalModal({ rfq, action, onClose, onDone }) {
     }
     setLoading(true);
     try {
-      await api.post(`/approvals/${rfq._id}/${action}`, { remarks });
+      await api.post(`/approvals/${rfq.id}/${action}`, { remarks });
       toast.success(action === 'approve' ? 'RFQ approved! PO generated.' : 'RFQ rejected.');
       onDone();
       onClose();
@@ -118,7 +118,7 @@ export default function ApprovalPage() {
       ) : (
         <div className="space-y-4">
           {pendingRFQs.map(rfq => (
-            <div key={rfq._id} className="card border-l-4 border-l-amber-400">
+            <div key={rfq.id} className="card border-l-4 border-l-amber-400">
               <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -161,13 +161,13 @@ export default function ApprovalPage() {
 
                 <div className="flex gap-2 sm:flex-col">
                   <button
-                    id={`approve-${rfq._id}`}
+                    id={`approve-${rfq.id}`}
                     onClick={() => setModalState({ rfq, action: 'approve' })}
                     className="btn-success flex-1 sm:flex-none">
                     <CheckCircle2 className="w-4 h-4" /> Approve
                   </button>
                   <button
-                    id={`reject-${rfq._id}`}
+                    id={`reject-${rfq.id}`}
                     onClick={() => setModalState({ rfq, action: 'reject' })}
                     className="btn-danger flex-1 sm:flex-none">
                     <XCircle className="w-4 h-4" /> Reject

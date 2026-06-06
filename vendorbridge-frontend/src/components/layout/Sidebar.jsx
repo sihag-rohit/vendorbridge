@@ -3,17 +3,18 @@ import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, Users, FileText, CheckSquare, 
-  ShoppingCart, Receipt, Activity, BarChart2, LogOut
+  ShoppingCart, Receipt, Activity, BarChart2, LogOut, ClipboardList
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin', 'officer', 'vendor', 'manager'] },
-  { name: 'Vendors', path: '/vendors', icon: Users, roles: ['admin', 'officer'] },
-  { name: 'RFQs', path: '/rfqs', icon: FileText, roles: ['admin', 'officer', 'vendor', 'manager'] },
-  { name: 'Approvals', path: '/approvals', icon: CheckSquare, roles: ['admin', 'manager'] },
-  { name: 'Purchase Orders', path: '/purchase-orders', icon: ShoppingCart, roles: ['admin', 'officer', 'vendor', 'manager'] },
-  { name: 'Invoices', path: '/invoices', icon: Receipt, roles: ['admin', 'officer', 'vendor', 'manager'] },
-  { name: 'Reports', path: '/reports', icon: BarChart2, roles: ['admin', 'officer', 'manager'] },
+  { name: 'Vendors', path: '/vendors', icon: Users, roles: ['admin'] },
+  { name: 'RFQs', path: '/rfqs', icon: FileText, roles: ['officer', 'vendor'] },
+  { name: 'Quotations', path: '/quotations', icon: ClipboardList, roles: ['officer', 'vendor'] },
+  { name: 'Approvals', path: '/approvals', icon: CheckSquare, roles: ['manager'] },
+  { name: 'Purchase Orders', path: '/purchase-orders', icon: ShoppingCart, roles: ['officer', 'vendor'] },
+  { name: 'Invoices', path: '/invoices', icon: Receipt, roles: ['officer', 'vendor'] },
+  { name: 'Reports', path: '/reports', icon: BarChart2, roles: ['admin', 'manager'] },
   { name: 'Activity Log', path: '/activity-logs', icon: Activity, roles: ['admin'] },
 ];
 

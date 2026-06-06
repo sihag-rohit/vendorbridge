@@ -63,12 +63,12 @@ export default function POListPage() {
               </thead>
               <tbody>
                 {pos.map(po => (
-                  <tr key={po._id}>
+                  <tr key={po.id}>
                     <td><span className="font-mono font-medium text-primary-700">{po.poNumber}</span></td>
-                    <td><span className="text-sm text-gray-600">{po.rfqId?.rfqNumber}</span></td>
+                    <td><span className="text-sm text-gray-600">{po.rfq?.rfqNumber || '—'}</span></td>
                     <td>
-                      <p className="font-medium text-sm">{po.vendorId?.name}</p>
-                      <p className="text-xs text-gray-400">{po.vendorId?.category}</p>
+                      <p className="font-medium text-sm">{po.vendor?.name || '—'}</p>
+                      <p className="text-xs text-gray-400">{po.vendor?.category || ''}</p>
                     </td>
                     <td><span className="font-semibold">₹{po.totalAmount?.toLocaleString()}</span></td>
                     <td>
@@ -78,7 +78,7 @@ export default function POListPage() {
                     </td>
                     <td><StatusBadge status={po.status} /></td>
                     <td>
-                      <Link to={`/purchase-orders/${po._id}`}
+                      <Link to={`/purchase-orders/${po.id}`}
                         className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 inline-flex" title="View">
                         <Eye className="w-4 h-4" />
                       </Link>

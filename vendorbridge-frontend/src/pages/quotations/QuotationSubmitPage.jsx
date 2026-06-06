@@ -92,7 +92,7 @@ export default function QuotationSubmitPage() {
       };
 
       if (existingQuotation) {
-        await api.put(`/quotations/${existingQuotation._id}`, payload);
+        await api.put(`/quotations/${existingQuotation.id}`, payload);
         toast.success('Quotation updated!');
       } else {
         await api.post('/quotations', payload);

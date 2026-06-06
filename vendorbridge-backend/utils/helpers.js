@@ -1,5 +1,4 @@
-const ActivityLog = require('../models/ActivityLog');
-const Notification = require('../models/Notification');
+const { ActivityLog, Notification } = require('../models');
 
 // Log an activity
 const logActivity = async ({ entityType, entityId, entityNumber, action, description, userId, userName, userRole, metadata }) => {

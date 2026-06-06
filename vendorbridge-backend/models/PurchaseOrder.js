@@ -1,50 +1,120 @@
-const mongoose = require('mongoose');
+const { DataTypes, Model } = require('sequelize');
+const sequelize = require('../config/database');
 
-const poItemSchema = new mongoose.Schema({
-  productName: { type: String, required: true },
-  description: String,
-  quantity: { type: Number, required: true },
-  unit: String,
-  unitPrice: { type: Number, required: true },
-  totalPrice: { type: Number, required: true }
-});
+class PurchaseOrder extends Model {}
+class PoItem extends Model {}
 
-const purchaseOrderSchema = new mongoose.Schema({
-  poNumber: { type: String, unique: true },
-  rfqId: { type: mongoose.Schema.Types.ObjectId, ref: 'RFQ', required: true },
-  quotationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quotation', required: true },
-  vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
-  items: [poItemSchema],
-  subtotal: { type: Number, required: true },
-  taxRate: { type: Number, default: 18 },
-  taxAmount: { type: Number, required: true },
-  totalAmount: { type: Number, required: true },
-  deliveryDate: { type: Date },
-  deliveryAddress: {
-    street: String,
-    city: String,
-    state: String,
-    pincode: String,
-    country: { type: String, default: 'India' }
+PurchaseOrder.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
   },
+  poNumber: {
+    type: DataTypes.STRING,
+    unique: true
+  },
+  rfqId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  quotationId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  vendorId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  subtotal: {
+    type: DataTypes.FLOAT,
+    allowNull: false
+  },
+  taxRate: {
+    type: DataTypes.FLOAT,
+    defaultValue: 18
+  },
+  taxAmount: {
+    type: DataTypes.FLOAT,
+    allowNull: false
+  },
+  totalAmount: {
+    type: DataTypes.FLOAT,
+    allowNull: false
+  },
+  deliveryDate: {
+    type: DataTypes.DATE
+  },
+  // Address flattened
+  deliveryStreet: { type: DataTypes.STRING },
+  deliveryCity: { type: DataTypes.STRING },
+  deliveryState: { type: DataTypes.STRING },
+  deliveryPincode: { type: DataTypes.STRING },
+  deliveryCountry: { type: DataTypes.STRING, defaultValue: 'India' },
+  
   status: {
-    type: String,
-    enum: ['generated', 'sent', 'acknowledged', 'in_progress', 'delivered', 'cancelled'],
-    default: 'generated'
+    type: DataTypes.ENUM('generated', 'sent', 'acknowledged', 'in_progress', 'delivered', 'cancelled'),
+    defaultValue: 'generated'
   },
-  termsConditions: String,
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
-}, { timestamps: true });
-
-// Auto-generate PO number
-purchaseOrderSchema.pre('save', async function (next) {
-  if (!this.poNumber) {
-    const count = await mongoose.model('PurchaseOrder').countDocuments();
-    const year = new Date().getFullYear();
-    this.poNumber = `PO-${year}-${String(count + 1).padStart(5, '0')}`;
+  termsConditions: {
+    type: DataTypes.TEXT
+  },
+  createdById: {
+    type: DataTypes.INTEGER
+  },
+  approvedById: {
+    type: DataTypes.INTEGER
   }
-  next();
+}, {
+  sequelize,
+  modelName: 'PurchaseOrder',
+  hooks: {
+    beforeCreate: async (po) => {
+      if (!po.poNumber) {
+        const count = await PurchaseOrder.count();
+        const year = new Date().getFullYear();
+        po.poNumber = `PO-${year}-${String(count + 1).padStart(5, '0')}`;
+      }
+    }
+  }
 });
 
-module.exports = mongoose.model('PurchaseOrder', purchaseOrderSchema);
+PoItem.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  purchaseOrderId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  productName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  description: {
+    type: DataTypes.TEXT
+  },
+  quantity: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  unit: {
+    type: DataTypes.STRING
+  },
+  unitPrice: {
+    type: DataTypes.FLOAT,
+    allowNull: false
+  },
+  totalPrice: {
+    type: DataTypes.FLOAT,
+    allowNull: false
+  }
+}, {
+  sequelize,
+  modelName: 'PoItem',
+  timestamps: false
+});
+
+module.exports = { PurchaseOrder, PoItem };

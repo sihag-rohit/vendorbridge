@@ -12,11 +12,13 @@ import RFQFormPage from './pages/rfqs/RFQFormPage';
 import RFQDetailPage from './pages/rfqs/RFQDetailPage';
 import QuotationSubmitPage from './pages/quotations/QuotationSubmitPage';
 import QuotationComparisonPage from './pages/quotations/QuotationComparisonPage';
+import QuotationListPage from './pages/quotations/QuotationListPage';
 import ApprovalPage from './pages/approvals/ApprovalPage';
 import POListPage from './pages/purchaseOrders/POListPage';
 import PODetailPage from './pages/purchaseOrders/PODetailPage';
 import InvoiceListPage from './pages/invoices/InvoiceListPage';
 import InvoiceDetailPage from './pages/invoices/InvoiceDetailPage';
+import ProfilePage from './pages/profile/ProfilePage';
 import NotificationsPage from './pages/notifications/NotificationsPage';
 import ActivityLogPage from './pages/activityLogs/ActivityLogPage';
 import ReportsPage from './pages/reports/ReportsPage';
@@ -47,63 +49,97 @@ function AppRoutes() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
 
-        {/* Vendor Management - admin, officer */}
+        {/* Vendor Management - admin */}
         <Route path="vendors" element={
-          <ProtectedRoute allowedRoles={['admin', 'officer']}>
+          <ProtectedRoute allowedRoles={['admin']}>
             <VendorListPage />
           </ProtectedRoute>
         } />
 
         {/* RFQs */}
-        <Route path="rfqs" element={<RFQListPage />} />
+        <Route path="rfqs" element={
+          <ProtectedRoute allowedRoles={['officer', 'vendor']}>
+            <RFQListPage />
+          </ProtectedRoute>
+        } />
         <Route path="rfqs/new" element={
-          <ProtectedRoute allowedRoles={['admin', 'officer']}>
+          <ProtectedRoute allowedRoles={['officer']}>
             <RFQFormPage />
           </ProtectedRoute>
         } />
         <Route path="rfqs/:id/edit" element={
-          <ProtectedRoute allowedRoles={['admin', 'officer']}>
+          <ProtectedRoute allowedRoles={['officer']}>
             <RFQFormPage />
           </ProtectedRoute>
         } />
-        <Route path="rfqs/:id" element={<RFQDetailPage />} />
+        <Route path="rfqs/:id" element={
+          <ProtectedRoute allowedRoles={['officer', 'vendor']}>
+            <RFQDetailPage />
+          </ProtectedRoute>
+        } />
         <Route path="rfqs/:id/compare" element={
-          <ProtectedRoute allowedRoles={['admin', 'officer', 'manager']}>
+          <ProtectedRoute allowedRoles={['officer']}>
             <QuotationComparisonPage />
           </ProtectedRoute>
         } />
 
-        {/* Quotations - vendor only */}
+        {/* Quotations */}
+        <Route path="quotations" element={
+          <ProtectedRoute allowedRoles={['officer', 'vendor']}>
+            <QuotationListPage />
+          </ProtectedRoute>
+        } />
         <Route path="quotations/submit/:rfqId" element={
-          <ProtectedRoute allowedRoles={['vendor', 'admin']}>
+          <ProtectedRoute allowedRoles={['vendor']}>
             <QuotationSubmitPage />
           </ProtectedRoute>
         } />
 
-        {/* Approvals - manager, admin */}
+        {/* Approvals - manager */}
         <Route path="approvals" element={
-          <ProtectedRoute allowedRoles={['admin', 'manager']}>
+          <ProtectedRoute allowedRoles={['manager']}>
             <ApprovalPage />
           </ProtectedRoute>
         } />
 
         {/* Purchase Orders */}
-        <Route path="purchase-orders" element={<POListPage />} />
-        <Route path="purchase-orders/:id" element={<PODetailPage />} />
+        <Route path="purchase-orders" element={
+          <ProtectedRoute allowedRoles={['officer', 'vendor']}>
+            <POListPage />
+          </ProtectedRoute>
+        } />
+        <Route path="purchase-orders/:id" element={
+          <ProtectedRoute allowedRoles={['officer', 'vendor']}>
+            <PODetailPage />
+          </ProtectedRoute>
+        } />
 
         {/* Invoices */}
-        <Route path="invoices" element={<InvoiceListPage />} />
-        <Route path="invoices/:id" element={<InvoiceDetailPage />} />
+        <Route path="invoices" element={
+          <ProtectedRoute allowedRoles={['officer', 'vendor']}>
+            <InvoiceListPage />
+          </ProtectedRoute>
+        } />
+        <Route path="invoices/:id" element={
+          <ProtectedRoute allowedRoles={['officer', 'vendor']}>
+            <InvoiceDetailPage />
+          </ProtectedRoute>
+        } />
 
-        {/* Notifications, Logs, Reports */}
+        {/* Notifications, Logs, Reports, Profile */}
+        <Route path="profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        } />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="activity-logs" element={
-          <ProtectedRoute allowedRoles={['admin', 'manager', 'officer']}>
+          <ProtectedRoute allowedRoles={['admin']}>
             <ActivityLogPage />
           </ProtectedRoute>
         } />
         <Route path="reports" element={
-          <ProtectedRoute allowedRoles={['admin', 'manager', 'officer']}>
+          <ProtectedRoute allowedRoles={['admin', 'manager']}>
             <ReportsPage />
           </ProtectedRoute>
         } />

@@ -32,7 +32,7 @@ export default function RFQListPage() {
     fetchRFQs();
   }, [statusFilter]);
 
-  const fetchRFQs = async () => {
+  async function fetchRFQs() {
     try {
       const { data } = await api.get('/rfqs', { params: statusFilter ? { status: statusFilter } : {} });
       setRfqs(data);
@@ -41,7 +41,7 @@ export default function RFQListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const filteredRfqs = rfqs.filter(rfq => 
     rfq.title.toLowerCase().includes(search.toLowerCase()) || 
@@ -113,7 +113,7 @@ export default function RFQListPage() {
               </thead>
               <motion.tbody variants={containerVariants} initial="hidden" animate="show">
                 {filteredRfqs.map((rfq) => (
-                  <motion.tr variants={itemVariants} key={rfq._id} className="cursor-pointer hover:bg-primary-50/50 transition-colors" onClick={() => window.location.href = `/rfqs/${rfq._id}`}>
+                  <motion.tr variants={itemVariants} key={rfq.id} className="cursor-pointer hover:bg-primary-50/50 transition-colors" onClick={() => window.location.href = `/rfqs/${rfq.id}`}>
                     <td>
                       <div className="font-semibold text-gray-900">{rfq.title}</div>
                       <div className="text-xs font-mono text-primary-600 mt-1">{rfq.rfqNumber}</div>
@@ -136,7 +136,7 @@ export default function RFQListPage() {
                     </td>
                     <td><StatusBadge status={rfq.status} /></td>
                     <td>
-                      <Link to={`/rfqs/${rfq._id}`} className="text-primary-600 font-semibold hover:text-primary-800 text-sm" onClick={e => e.stopPropagation()}>
+                      <Link to={`/rfqs/${rfq.id}`} className="text-primary-600 font-semibold hover:text-primary-800 text-sm" onClick={e => e.stopPropagation()}>
                         View Details →
                       </Link>
                     </td>

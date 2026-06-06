@@ -1,3 +1,5 @@
+import Skeleton, { TableSkeleton } from './Skeleton';
+
 export default function LoadingSpinner({ size = 'md', className = '' }) {
   const sizes = {
     sm: 'w-4 h-4 border-2',
@@ -13,11 +15,8 @@ export default function LoadingSpinner({ size = 'md', className = '' }) {
 
 export function PageLoader() {
   return (
-    <div className="flex items-center justify-center py-20">
-      <div className="text-center">
-        <LoadingSpinner size="lg" className="mx-auto" />
-        <p className="text-gray-400 text-sm mt-3">Loading...</p>
-      </div>
+    <div className="w-full h-full p-4 animate-fade-in">
+      <TableSkeleton rows={4} cols={4} />
     </div>
   );
 }

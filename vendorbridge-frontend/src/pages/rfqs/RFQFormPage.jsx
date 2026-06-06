@@ -4,7 +4,8 @@ import api from '../../services/api';
 import { PageLoader } from '../../components/ui/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { Plus, Trash2, ArrowLeft, Calendar, Package } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
+import { generateRFQFromText } from '../../services/aiService';
 
 const UNITS = ['pcs', 'kg', 'liters', 'meters', 'boxes', 'units', 'hours', 'days', 'set'];
 
@@ -23,6 +24,36 @@ export default function RFQFormPage() {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [vendorSearch, setVendorSearch] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [generatingAi, setGeneratingAi] = useState(false);
+
+  const handleAiGenerate = async () => {
+    if (!aiPrompt.trim()) return toast.error('Please describe what you need.');
+    setGeneratingAi(true);
+    const toastId = toast.loading('Generating RFQ with AI...');
+    try {
+      const generated = await generateRFQFromText(aiPrompt);
+      setForm(prev => ({
+        ...prev,
+        title: generated.title || prev.title,
+        description: generated.notes || prev.description,
+        deadline: generated.delivery_days_suggested ? format(addDays(new Date(), generated.delivery_days_suggested), 'yyyy-MM-dd') : prev.deadline,
+        items: [{
+          productName: generated.product_service || '',
+          description: '',
+          quantity: generated.quantity || 1,
+          unit: 'pcs',
+          estimatedPrice: generated.budget_inr ? generated.budget_inr / (generated.quantity || 1) : ''
+        }]
+      }));
+      toast.success('Form filled by AI!', { id: toastId });
+      setAiPrompt('');
+    } catch (err) {
+      toast.error(err.message || 'AI Generation failed.', { id: toastId });
+    } finally {
+      setGeneratingAi(false);
+    }
+  };
 
   useEffect(() => {
     api.get('/vendors', { params: { status: 'active' } }).then(r => setVendors(r.data));
@@ -33,7 +64,7 @@ export default function RFQFormPage() {
           title: rfq.title, description: rfq.description || '',
           priority: rfq.priority, deadline: format(new Date(rfq.deadline), 'yyyy-MM-dd'),
           items: rfq.items, status: rfq.status,
-          assignedVendors: rfq.assignedVendors.map(v => v._id)
+          assignedVendors: rfq.assignedVendors.map(v => v.id)
         });
       }).finally(() => setLoading(false));
     }
@@ -97,6 +128,33 @@ export default function RFQFormPage() {
         </div>
       </div>
 
+      {/* AI Smart Fill Banner */}
+      {!isEdit && (
+        <div className="card gradient-primary p-6 text-white">
+          <h2 className="text-lg font-semibold mb-2">AI Smart Fill</h2>
+          <p className="text-white/80 text-sm mb-4">Describe what you need in plain English and let AI fill out the form for you.</p>
+          <div className="flex gap-3">
+            <input 
+              type="text" 
+              className="input bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white focus:ring-white/30" 
+              placeholder="e.g., I need 50 office laptops for the new tech team, budget around 3000000 INR, delivery in 14 days."
+              value={aiPrompt}
+              onChange={e => setAiPrompt(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !generatingAi && (e.preventDefault(), handleAiGenerate())}
+              disabled={generatingAi}
+            />
+            <button 
+              type="button" 
+              onClick={handleAiGenerate}
+              disabled={generatingAi || !aiPrompt.trim()}
+              className="bg-white text-primary-900 px-6 py-2 rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors whitespace-nowrap"
+            >
+              {generatingAi ? 'Generating...' : 'Generate with AI'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={(e) => handleSubmit(e, false)}>
         <div className="space-y-6">
           {/* Basic Info */}
@@ -117,12 +175,9 @@ export default function RFQFormPage() {
               </div>
               <div>
                 <label className="label">Deadline *</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input type="date" className="input pl-9"
-                    value={form.deadline} onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))}
-                    min={format(new Date(), 'yyyy-MM-dd')} required />
-                </div>
+                <input type="date" className="input"
+                  value={form.deadline} onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))}
+                  min={format(new Date(), 'yyyy-MM-dd')} required />
               </div>
               <div>
                 <label className="label">Priority</label>
@@ -190,15 +245,15 @@ export default function RFQFormPage() {
               value={vendorSearch} onChange={e => setVendorSearch(e.target.value)} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
               {filteredVendors.map(vendor => (
-                <label key={vendor._id}
+                <label key={vendor.id}
                   className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                    form.assignedVendors.includes(vendor._id)
+                    form.assignedVendors.includes(vendor.id)
                       ? 'border-primary-500 bg-primary-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}>
                   <input type="checkbox" className="w-4 h-4 text-primary-600 rounded"
-                    checked={form.assignedVendors.includes(vendor._id)}
-                    onChange={() => toggleVendor(vendor._id)} />
+                    checked={form.assignedVendors.includes(vendor.id)}
+                    onChange={() => toggleVendor(vendor.id)} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{vendor.name}</p>
                     <p className="text-xs text-gray-500">{vendor.category}</p>

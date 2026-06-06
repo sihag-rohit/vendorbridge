@@ -1,46 +1,128 @@
-const mongoose = require('mongoose');
+const { DataTypes, Model } = require('sequelize');
+const sequelize = require('../config/database');
 
-const rfqItemSchema = new mongoose.Schema({
-  productName: { type: String, required: true },
-  description: String,
-  quantity: { type: Number, required: true, min: 1 },
-  unit: { type: String, default: 'pcs' },
-  estimatedPrice: Number
-});
+class RFQ extends Model {}
+class RfqItem extends Model {}
+class RfqAttachment extends Model {}
 
-const rfqSchema = new mongoose.Schema({
-  rfqNumber: { type: String, unique: true },
-  title: { type: String, required: true, trim: true },
-  description: { type: String },
-  items: [rfqItemSchema],
-  deadline: { type: Date, required: true },
-  status: {
-    type: String,
-    enum: ['draft', 'sent', 'under_comparison', 'pending_approval', 'approved', 'rejected', 'closed'],
-    default: 'draft'
+RFQ.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
   },
-  assignedVendors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' }],
-  selectedVendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', default: null },
-  selectedQuotation: { type: mongoose.Schema.Types.ObjectId, ref: 'Quotation', default: null },
-  attachments: [{
-    name: String,
-    url: String,
-    uploadedAt: { type: Date, default: Date.now }
-  }],
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-  approvalRemarks: String,
-  approvedAt: Date,
-  priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' }
-}, { timestamps: true });
-
-// Auto-generate RFQ number before save
-rfqSchema.pre('save', async function (next) {
-  if (!this.rfqNumber) {
-    const count = await mongoose.model('RFQ').countDocuments();
-    this.rfqNumber = `RFQ-${String(count + 1).padStart(5, '0')}`;
+  rfqNumber: {
+    type: DataTypes.STRING,
+    unique: true
+  },
+  title: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  description: {
+    type: DataTypes.TEXT
+  },
+  deadline: {
+    type: DataTypes.DATE,
+    allowNull: false
+  },
+  status: {
+    type: DataTypes.ENUM('draft', 'sent', 'under_comparison', 'pending_approval', 'approved', 'rejected', 'closed'),
+    defaultValue: 'draft'
+  },
+  selectedVendorId: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  selectedQuotationId: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  createdById: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  approvedById: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  approvalRemarks: {
+    type: DataTypes.TEXT
+  },
+  approvedAt: {
+    type: DataTypes.DATE
+  },
+  priority: {
+    type: DataTypes.ENUM('low', 'medium', 'high'),
+    defaultValue: 'medium'
   }
-  next();
+}, {
+  sequelize,
+  modelName: 'RFQ',
+  hooks: {
+    beforeCreate: async (rfq) => {
+      if (!rfq.rfqNumber) {
+        const count = await RFQ.count();
+        rfq.rfqNumber = `RFQ-${String(count + 1).padStart(5, '0')}`;
+      }
+    }
+  }
 });
 
-module.exports = mongoose.model('RFQ', rfqSchema);
+RfqItem.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  rfqId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  productName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  description: {
+    type: DataTypes.TEXT
+  },
+  quantity: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  unit: {
+    type: DataTypes.STRING,
+    defaultValue: 'pcs'
+  },
+  estimatedPrice: {
+    type: DataTypes.FLOAT
+  }
+}, {
+  sequelize,
+  modelName: 'RfqItem',
+  timestamps: false
+});
+
+RfqAttachment.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  rfqId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  name: DataTypes.STRING,
+  url: DataTypes.STRING,
+  uploadedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  }
+}, {
+  sequelize,
+  modelName: 'RfqAttachment',
+  timestamps: false
+});
+
+module.exports = { RFQ, RfqItem, RfqAttachment };
