@@ -53,6 +53,3 @@ Start the Vite dev server:
 ```bash
 npm run dev
 ```
-
----
-Feel free to play around with it!
