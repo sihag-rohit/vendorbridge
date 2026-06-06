@@ -55,17 +55,4 @@ npm run dev
 ```
 
 ---
-
-## Demo Accounts
-
-Go to `http://localhost:5173` in your browser. We already created some test accounts during the database seed so you can jump right in without needing to register:
-
-**Officer / Admin Account:**
-- **Email:** `officer@vendorbridge.com` (or `admin@vendorbridge.com`)
-- **Password:** `password123`
-
-**Vendor Account:**
-- **Email:** `vendor1@vendorbridge.com`
-- **Password:** `password123`
-
 Feel free to play around with it!
